@@ -30,8 +30,8 @@ uchar count2=0;						//
 uchar count3=0;						//
 uchar flag_500mS=0;					//
 uchar flag_1S=0;					//
-uchar delay=0;						//延时标志
 
+uchar flag_Position=0;				//位置按键按下标志
 uchar Unusual=0;					//异常标志
 uchar Flash_S=0;					//状态红灯秒闪标志
 
@@ -109,14 +109,20 @@ void interrupt timer0()
 	{
 		count3=0;
 		flag_1S=1;		//1秒时间到
-		delay=1;		//延时标志
 		if(Flash_S)
 		{
 			RA1 =~RA1;	//LED PA2驱动信号取反
 		}else
 			{
-				PORTA |=(1<<1);
-				PORTA &=~(1<<0);
+				if(Unusual)
+				{
+					PORTA &=~(1<<1);		//点亮红灯
+					PORTA |=(1<<0);			//关闭绿灯
+				}else
+					{
+						PORTA |=(1<<1);		//关闭红灯
+						PORTA &=~(1<<0);	//点亮绿灯
+					}
 			}
 	}
 }
@@ -208,6 +214,7 @@ void main()
 	uchar i;
 	count1=0;
 	count2=0;
+	count3=0;
 	Flash_S=0;
 
 	WatchDog_Configuration();
@@ -217,85 +224,111 @@ void main()
 	AD_Configuration();
 	CLRWDT();
 
-	GIE=1;					//开全局中断
-
 	PORTA |=(1<<1);			//关闭状态红灯
 	PORTA &=~(1<<0);		//开启状态绿灯
+	
+	GIE=1;					//开全局中断
 
 	while(1)
 	{
 		CLRWDT();
 
-		if(flag_500mS)
+		if(PUMP!=1)
 		{
-			flag_500mS=0;
-			//adc=GET_AD();
-			for(i=0;i<8;i++)
+			if(flag_500mS)
 			{
-				adc_buffer[i++]=GET_AD();
-				__delay_ms(1);
-			}
-			adc=Filter_ADC(adc_buffer,8);
-			CLRWDT();
-
-			if(adc>709)								//8V //3.3V 709
-			{
-				PORTC &=~((1<<0)|(1<<1)|(1<<4));	//引脚为输出低电平
-				Flash_S=0;
-			}else
-				if(adc>680)							//7.6V //3.3V 680
+				flag_500mS=0;
+				//adc=GET_AD();
+				for(i=0;i<8;i++)
 				{
-					PORTC &=~((1<<0)|(1<<4));		//引脚为输出低电平
-					PORTC |=(1<<1);					//引脚为输出高电平
+					adc_buffer[i++]=GET_AD();
+					__delay_ms(1);
+				}
+				adc=Filter_ADC(adc_buffer,8);
+				CLRWDT();
+
+				if(adc>709)								//8V //3.3V 709
+				{
+					PORTC &=~((1<<0)|(1<<1)|(1<<4));	//引脚为输出低电平
 					Flash_S=0;
 				}else
-					if(adc>652)						//7.3V //3.3V 652
+					if(adc>680)							//7.6V //3.3V 680
 					{
-						PORTC &=~(1<<4);			//引脚为输出低电平
-						PORTC |=(1<<0)|(1<<1);		//引脚为输出高电平
+						PORTC &=~((1<<0)|(1<<4));		//引脚为输出低电平
+						PORTC |=(1<<1);					//引脚为输出高电平
 						Flash_S=0;
 					}else
-						if(adc>625)					//7.05V //3.3V 625
+						if(adc>652)						//7.3V //3.3V 652
 						{
-							PORTC |=(1<<0)|(1<<1)|(1<<4);	//关闭所以电量指示灯
+							PORTC &=~(1<<4);			//引脚为输出低电平
+							PORTC |=(1<<0)|(1<<1);		//引脚为输出高电平
 							Flash_S=0;
 						}else
-						{
-							PORTA |=(1<<0);					//关闭状态绿灯
-							PORTC |=(1<<0)|(1<<1)|(1<<4);	//关闭电量指示灯
-							Flash_S=1;						//开启红灯秒闪
-						}
+							if(adc>625)					//7.05V //3.3V 625
+							{
+								PORTC |=(1<<0)|(1<<1)|(1<<4);	//关闭所以电量指示灯
+								Flash_S=0;
+							}else
+							{
+								PORTA |=(1<<0);					//关闭状态绿灯
+								PORTC |=(1<<0)|(1<<1)|(1<<4);	//关闭电量指示灯
+								Flash_S=1;						//开启红灯秒闪
+							}
+				}
 		}
 		
 		if(!Flash_S)
 		{
 			if((POSITION_BUTTON == 0)||(IGN_BUTTON == 0))	//判断按键是否有按下
 			{
-				PUMP=1;
-				count1=0;
-				__delay_ms(20);
-				if(POSITION_BUTTON == 0)					//电机开关PA5按下
+				if(last_adc==0)
 				{
-					if(delay==1)
+					for(i=0;i<8;i++)
 					{
-						if(IGN_BUTTON == 0)
+						adc_buffer[i++]=GET_AD();
+						__delay_ms(1);
+					}
+					last_adc=Filter_ADC(adc_buffer,8);
+					count2=0;						//计时清零
+				}
+				if(flag_500mS)
+				{
+					for(i=0;i<8;i++)
+					{
+						adc_buffer[i++]=GET_AD();
+						__delay_ms(1);
+					}
+					adc=Filter_ADC(adc_buffer,8);
+
+					if((last_adc-adc)>50)			//压差达到0.5V认为出现异常
+					{
+						Unusual=1;					//异常标志
+					}else Unusual=0;				//异常恢复
+				}
+
+				PUMP=1;								//打开电机
+				count1=0;							//初始化计数器，以便延时关闭电机
+				__delay_ms(20);
+				if((POSITION_BUTTON == 0)&&(IGN_BUTTON != 0))			//位置按键PA5按下
+				{
+					if(flag_Position==0)flag_Position=1;
+				}else if((POSITION_BUTTON == 0)&&(IGN_BUTTON == 0))
+					{
+						if(flag_Position)
 						{
-							__delay_ms(20);
-							if(IGN_BUTTON == 0)
-							{
-								if(count==0)
-									Ignition();				//点火
-								count=2;
-								delay=0;
-							}
+							if(count==0)Ignition();		//点火
+							count=2;
+							flag_Position=0;
 						}
 					}
-				}
 				CLRWDT();
 			}
 			else
 			{
 				count=0;
+				last_adc=0;
+				flag_Position=0;
+				Unusual=0;				//异常恢复
 			}
 		}
 	}
