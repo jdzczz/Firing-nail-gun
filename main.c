@@ -138,28 +138,18 @@ void Ignition(void)
 	unsigned char i=0;
 	PORTC |=(1<<2);
 	__delay_ms(30);
-	PORTC |=(1<<2)|(1<<3);
-	__delay_ms(15);
-	PORTC &=~(1<<3);
-	PORTC |=(1<<2);
-	__delay_ms(15);
-	PORTC &=~(1<<2);
-	__delay_ms(15);
 
-	for(i=0;i<6;i++)
+	for(i=0;i<5;i++)
 	{
-		PORTC |=(1<<2);
-		__delay_ms(15);
-		PORTC |=(1<<2)|(1<<3);
-		__delay_ms(15);
+		__delay_ms(20);
+		PORTC |=(1<<3);
+		__delay_ms(10);
 		PORTC &=~(1<<3);
-		PORTC |=(1<<2);
-		__delay_ms(15);
-		PORTC &=~(1<<2);
-		__delay_ms(15);
-
+		
 		CLRWDT();
 	}
+	__delay_ms(10);
+	PORTC &=~(1<<2);
 }
 
 /*******************************************************************************
