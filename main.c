@@ -135,6 +135,7 @@ void interrupt timer0()
 //*********************************************************************
 void Ignition(void)
 {
+	unsigned char i=0;
 	PORTC |=(1<<2);
 	__delay_ms(30);
 	PORTC |=(1<<2)|(1<<3);
@@ -145,35 +146,20 @@ void Ignition(void)
 	PORTC &=~(1<<2);
 	__delay_ms(15);
 
-	PORTC |=(1<<2);
-	__delay_ms(15);
-	PORTC |=(1<<2)|(1<<3);
-	__delay_ms(15);
-	PORTC &=~(1<<3);
-	PORTC |=(1<<2);
-	__delay_ms(15);
-	PORTC &=~(1<<2);
-	__delay_ms(15);
+	for(i=0;i<6;i++)
+	{
+		PORTC |=(1<<2);
+		__delay_ms(15);
+		PORTC |=(1<<2)|(1<<3);
+		__delay_ms(15);
+		PORTC &=~(1<<3);
+		PORTC |=(1<<2);
+		__delay_ms(15);
+		PORTC &=~(1<<2);
+		__delay_ms(15);
 
-	PORTC |=(1<<2);
-	__delay_ms(15);
-	PORTC |=(1<<2)|(1<<3);
-	__delay_ms(15);
-	PORTC &=~(1<<3);
-	PORTC |=(1<<2);
-	__delay_ms(15);
-	PORTC &=~(1<<2);
-	__delay_ms(15);
-	
-	PORTC |=(1<<2);
-	__delay_ms(15);
-	PORTC |=(1<<2)|(1<<3);
-	__delay_ms(15);
-	PORTC &=~(1<<3);
-	PORTC |=(1<<2);
-	__delay_ms(15);
-	PORTC &=~(1<<2);
-	__delay_ms(15);
+		CLRWDT();
+	}
 }
 
 /*******************************************************************************
@@ -308,7 +294,7 @@ void main()
 
 				PUMP=1;								//打开电机
 				count1=0;							//初始化计数器，以便延时关闭电机
-				__delay_ms(20);
+				__delay_ms(10);
 				if((POSITION_BUTTON == 0)&&(IGN_BUTTON != 0))			//位置按键PA5按下
 				{
 					if(flag_Position==0)flag_Position=1;
