@@ -2,6 +2,7 @@
 
 #include<pic.h>              	//包含单片机内部资源预定义
 #include<pic16fxxx_adc.h>
+#include<pic16fxxx_eeprom.h>
 
 #define uchar unsigned char
 #define uint  unsigned int
@@ -137,18 +138,17 @@ void Ignition(void)
 {
 	unsigned char i=0;
 	PORTC |=(1<<2);
-	__delay_ms(30);
 
 	for(i=0;i<5;i++)
 	{
-		__delay_ms(20);
+		__delay_ms(30);
 		PORTC |=(1<<3);
-		__delay_ms(10);
+		__delay_ms(5);
 		PORTC &=~(1<<3);
 		
 		CLRWDT();
 	}
-	__delay_ms(10);
+	__delay_ms(5);
 	PORTC &=~(1<<2);
 }
 
