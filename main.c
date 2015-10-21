@@ -139,16 +139,19 @@ void Ignition(void)
 	unsigned char i=0;
 	PORTC |=(1<<2);
 
-	for(i=0;i<5;i++)
+	for(i=0;i<4;i++)
 	{
-		__delay_ms(30);
+		__delay_ms(46);
 		PORTC |=(1<<3);
-		__delay_ms(5);
+		__delay_us(2);
 		PORTC &=~(1<<3);
+		__delay_us(2);
+		PORTC &=~(1<<2);
+		__delay_us(2);
+		PORTC |=(1<<2);
 		
 		CLRWDT();
 	}
-	__delay_ms(5);
 	PORTC &=~(1<<2);
 }
 
